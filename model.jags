@@ -1,0 +1,17 @@
+##Aditya Prabaswara Mardjikoen (S2264710)
+
+model{
+  ## specify the distribution for x_1 and x_2 - note using precision
+  
+  x[1] ~ dnorm(0,0.01)
+  
+  x[2] ~ dnorm(x[1],tau)
+  
+  for (i in 3:N){ ## loop over the data
+  
+    x[i] ~ dnorm(2*x[i]-x[i-1],tau) ## specify the distribution for the rest of x_i - note using precision
+    
+  }
+  tau ~ dgamma(4,0.04) ## prior for precision tau
+  
+}
