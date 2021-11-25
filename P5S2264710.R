@@ -37,10 +37,10 @@ acfplot(sam.coda)
 crosscorr(sam.coda)
 effectiveSize(sam.coda)
 HPDinterval(sam.coda[[1]])
-apply(sam.coda[[1]],2,quantile,prob=(c(0.025,.975)))
+apply(sam.coda[[1]],2,quantile,prob=(c(0.025,0.975)))
 
 ##plot for death and incidence
-credible.int <- apply(sam$n,1,quantile,prob=(c(0.025,.975)))
+credible.int <- apply(sam$n,1,quantile,prob=(c(0.025,0.975)))
 max_vertical <- max(sam$n[1:length(y)],credible.int[1,1:length(y)],credible.int[2,1:length(y)],sam$m[1:length(y_new)])
 plot(sam$n[1:length(y)],xlab='Day of the year',ylab='Number of patient',type='l',xlim=c(0,length(y_new)),ylim=c(0,max_vertical),col='green',xaxt='n')
 lines(credible.int[1,1:length(y)],col='red',lty=2)
