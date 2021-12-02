@@ -1,18 +1,52 @@
 ##Aditya Prabaswara Mardjikoen (S2264710)
 
+##Overview:
+##--------------------------------------------------
+##In this JAGS model, we will specify a brief ##procedure to compute the daily number of new ##infections and the expected number of daily ##deaths. We will use this following notation in ##this JAGS model:
+##x[i] = log of the number of infections on day i ##n[i] = number of new infections on day i
+##m[i] = expected number of deaths on day i
+##y[i] = observed number of deaths on day i
+##N = the number of deaths data
+##tau = precision for day two and afterwards
+##B = square matrix defined in P5S2264710.R file
+##
+##Assume that y[i] and x[i] has a Poisson and Normal
+##distribution respectively. To be noted, for the ##parameter of the Normal distribution for x[i] we ##use precision instead of variance. 
+##--------------------------------------------------
+
 model{
-  ## specify the distribution for x_1 and x_2 - note using precision
+
+  ## Specify the distribution for x[1] and x[2].
+  
   x[1] ~ dnorm(0,0.01)
+  
   x[2] ~ dnorm(x[1],tau)
-  for (i in 3:N){ ## loop over the data
-    x[i] ~ dnorm(2*x[i-1]-x[i-2],tau) ## specify the distribution for the rest of x_i - note using precision
+  
+  ## Specify the distribution for the rest of x[i].
+  
+  for (i in 3:N){ 
+  
+    x[i] ~ dnorm(2*x[i-1]-x[i-2],tau)
+    
   }
+  
+  ##Compute n[i] and m[i].
+  
   for (i in 1:N){
-    n[i] <- exp(x[i])
+  
+    n[i] <- exp(x[i]) 
+    
   }
+  
   m <- B %*% n
+  
+  ## Specify the distribution for the y[i].
+  
   for (i in 1:N){
-    y[i] ~ dpois(m[i])
+  
+    y[i] ~ dpois(m[i]) 
+    
   }
-  tau ~ dgamma(4,0.04) ## prior for precision tau
+  
+  tau ~ dgamma(4,0.04) ## Prior for precision tau.
 }
