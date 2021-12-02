@@ -1,25 +1,20 @@
 ##Aditya Prabaswara Mardjikoen (S2264710)
 
 ##Overview:
-##---------------------------------------------------
+##-----------------------------------------------
 ##In this JAGS model, we will specify a brief 
-##procedure to compute the daily number of 
-##new infections and the expected number of 
-##daily death. We will use this following 
-##notation in this JAGS model:
-##x[i] = log of the number of infections on day i 
+##procedure to compute the daily number of new
+##infections and the expected number of daily ##death. We will use this following notation in ##this JAGS model:
+##x[i] = log of the number of infections on day i
 ##n[i] = number of new infections on day i
 ##m[i] = expected number of deaths on day i
 ##y[i] = observed number of deaths on day i
-##N = number of observations in the daily deaths data
+##N = number of observations in the dataset
 ##tau = precision for day two and afterwards
 ##B = square matrix defined in P5S2264710.R file
 ##
-##Assume that y[i] and x[i] has a Poisson and Normal
-##distribution respectively. To be noted, the Normal
-##distribution for x[i] is parameterized in terms of
-##precision instead of variance. 
-##----------------------------------------------------
+##Assume that y[i] and x[i] has a Poisson and ##Normaldistribution respectively. To be noted, ##the Normal distribution for x[i] is ##parameterized in terms ofprecision instead of ##variance. 
+##-----------------------------------------------
 
 model{
 
