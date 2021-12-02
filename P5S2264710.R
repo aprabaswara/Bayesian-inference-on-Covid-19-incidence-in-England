@@ -1,5 +1,7 @@
 ##Aditya Prabaswara Mardjikoen (S2264710)
 
+##Overview:
+
 library(rjags)
 library(coda)
 
@@ -31,50 +33,36 @@ for (i in 1:nrow(B)){
 ##input to jags
 setwd('C:/Users/Aditya Prabaswara/Bayesian-inference-on-Covid-19-incidence-in-England')
 mod <- jags.model("model.jags",data=list(y=y_new,N=length(y_new),B=B))
-sam <- jags.samples(mod,c("m","n"),n.iter=10000)
-str(sam)
-sam.coda <- coda.samples(mod,c("tau"),n.iter=10000)
-str(sam.coda)
-plot(sam.coda)
-acfplot(sam.coda,aspect=1)
-effectiveSize(sam.coda)
-HPDinterval(sam.coda[[1]])
-apply(sam.coda[[1]],2,quantile,prob=(c(0.025,0.975)))
+sam.coda <- coda.samples(mod,c("m","n"),n.iter=10000)
+par(mfrow=c(2,3))
+traceplot(sam.coda[[1]][,c('n[50]','n[75]','n[90]','m[90]','m[100]','m[110]')])
+acfplot(sam.coda[[1]][,c('n[50]','n[75]','n[90]','m[90]','m[100]','m[110]')],aspect=1)
+effectiveSize(sam.coda[[1]][,c('n[50]','n[75]','n[90]','m[90]','m[100]','m[110]')])
 
 ##generate credible interval
-credible.int <- apply(sam$n,1,quantile,prob=(c(0.025,0.975)))
-max_vertical <- max(sam$n[1:length(y)],credible.int[1,1:length(y)],credible.int[2,1:length(y)],sam$m[1:length(y_new)])
+credible.int <- apply(sam.coda[[1]][,(length(y_new)+1):(length(y_new)+length(y))],2,quantile,prob=(c(0.025,0.975)))
+max_vertical <- max(colMeans(sam.coda[[1]][,1:length(y_new)]),credible.int[1,],credible.int[2,],colMeans(sam.coda[[1]][,(length(y_new)+1):(length(y_new)+length(y))]))
 lockdown_day <- julian(as.Date("2020-3-24"),origin=as.Date("2019-12-31"))
 date_vector <- seq(as.Date("2020-2-11"), by = "days", length.out = 120)
 julian_day <- julian(date_vector,origin=as.Date("2019-12-31"))
 
-##generate start date
-start_date <- c()
-observed_month <- unique(months(date_vector))
-for (i in observed_month){
-  first_date <- min(date_vector[which(months(date_vector)==i)])
-  first_date <- as.character(first_date)
-  start_date <- c(start_date,first_date)
-}
-start_date <- as.Date(start_date)
-julian_start <- julian(start_date,origin=as.Date("2019-12-31"))
-
 ##plot the data
-plot(julian_day,y_new,xlab='Day of the year',ylab='Incidence',ylim=c(0,max_vertical),col='grey')
+#Reference: 
+#https://stackoverflow.com/questions/14069629/how-can-i-plot-data-with-confidence-intervals
+#https://statisticsglobe.com/r-polygon-function-plot/
+#https://statisticsglobe.com/rev-r-function
+par(mfrow=c(1,1))
+plot(julian_day,y_new,xlab='Day of the year',ylab='Number of Individuals',ylim=c(0,max_vertical),col='grey')
+polygon(c(rev(julian_day[1:length(y)]), julian_day[1:length(y)]), c(rev(credible.int[1,1:length(y)]),credible.int[2,1:length(y)]), 
+        col = 'gray91', border = NA)
 lines(julian_day[1:length(y)],credible.int[1,1:length(y)],col='red',lty=2)
 lines(julian_day[1:length(y)],credible.int[2,1:length(y)],col='red',lty=2)
-lines(julian_day[1:length(y)],sam$n[1:length(y)],col='green')
-lines(julian_day,sam$m[1:length(y_new)],col='blue')
-
-##Question: After running MCMC do we take 120 data in the final iteration?
-
-##lines(julian_day[1:length(y)],sam$n[(length(sam$n)-119):length(sam$n)][1:100],col='green')
-##lines(julian_day,sam$m[(length(sam$m)-119):length(sam$m)],col='blue')
+lines(julian_day[1:length(y)],colMeans(sam.coda[[1]][,(length(y_new)+1):(length(y_new)+length(y))]),col='green')
+lines(julian_day,colMeans(sam.coda[[1]][,1:length(y_new)]),col='blue')
 
 abline(v=lockdown_day,lty=2)
-axis(3,at=julian_start,labels=observed_month,cex.axis=0.55,lwd.ticks=0.5,padj=1)
-legend(x='topright',legend=c("New Infections", "Expected Death", "95% Credible Interval"),col=c("green", "blue","red"), lty=c(1,1,2), cex=0.55,bty='o',inset=0.05)
-text(x=lockdown_day+4,y=1100,label='UK Lockdown',pos=3,cex=0.7,srt=90)
+legend(x='topright',legend=c("Mean for New Infections", "Mean for Expected Death", "95% Credible Interval (New Infections)","Real Daily Death"),
+       col=c("green", "blue",NA,'grey'), lty=c(1,1,NA,NA),fill = c(NA,NA, 'gray91',NA),border = c(NA,NA,'gray91'), pch=c(NA,NA,NA,1),
+       cex=0.55,bty='n',inset=0.05,x.intersp=c(2,2,1.5,2.2))
+text(x=lockdown_day+4,y=1100,label='lockdown I',pos=3,cex=0.7,srt=90)
 title('Daily Death and New Infections from COVID-19 at England (2020)',cex.main=0.8)
-
-##Question: Does new infection decrease sharply before lockdown?
