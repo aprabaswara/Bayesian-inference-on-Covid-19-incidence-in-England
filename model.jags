@@ -16,8 +16,8 @@
 ##B = square matrix defined in P5S2264710.R file
 ##
 ##Assume that y[i] and x[i] has a Poisson and Normal
-##distribution respectively. To be noted, for the ##parameter of the Normal distribution for x[i] we 
-##use precision instead of variance. 
+##distribution respectively. To be noted, the Normal ##distribution for x[i] is parameterized in terms of 
+##precision instead of variance. 
 ##----------------------------------------------------
 
 model{
