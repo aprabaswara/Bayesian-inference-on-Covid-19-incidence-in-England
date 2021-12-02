@@ -48,7 +48,7 @@ model{
   
   m <- B %*% n
   
-  ## Specify the distribution for the y[i].
+  ## Specify the distribution for y[i].
   
   for (i in 1:N){
   
