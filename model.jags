@@ -15,9 +15,11 @@
 ##tau = precision for day two and afterwards
 ##B = square matrix defined in P5S2264710.R file
 ##
-##Assume that y[i] and x[i] has a Poisson and ##Normal distribution respectively. To be noted,
+##Assume that y[i] and x[i] has a Poisson and
+##Normal distribution respectively. To be noted,
 ##the Normal distribution for x[i] is
-##parameterized in terms ofprecision instead of ##variance. 
+##parameterized in terms ofprecision instead of
+##variance. 
 ##-----------------------------------------------
 
 model{
