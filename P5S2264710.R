@@ -1,22 +1,78 @@
 ##Aditya Prabaswara Mardjikoen (S2264710)
 
 ##Overview:
-##------------------------------------------------------------------------------------------------------------------------------------
-##The aims of this project is:
-##1. Observe and interpret the trend of the daily new infections and expected deaths of COVID-19 in England hospital at 2020.
-##2. Perform diagnostic analysis on the new infections and expected deaths
-##------------------------------------------------------------------------------------------------------------------------------------
+##------------------------------------------------------------------------------
+##We know that COVID-19 disease is an pandemic that has threaten our life from
+##around December 2019 and it start to spread widely in 2020. It is caused by a
+##virus called SARS-COV. If we talk about COVID-19 we should talk a little about 
+##death and infections. Infections is the process of invasion and multiplication 
+##of microorganism such as bacteria, virus, and parasite that are not normally 
+##present in our body, while death is  the cessation of all vital functions of 
+##the body including the heartbeat, brain activity (including the brain stem), 
+##and breathing. 
+##
+##This R code is mainly about Bayesian data analysis using the Markov Chain 
+##Monte Carlo sampling in R with the help of computation in JAGS by using the 
+##daily death data of COVID-19 at a hospital which observed from March 2nd, 2020. 
+##The data source is from NHS England. The aims of this project is:
+##1. Observe and interpret the trend of the daily new infections and expected 
+##   deaths of COVID-19 in England hospital at 2020.
+##
+##2. Perform diagnostic analysis on the new infections and expected deaths.
+##------------------------------------------------------------------------------
+##
+##Notation:
+##------------------------------------------------------------------------------
+##m[i] = expected deaths in day i, y[i] = the observed number of deaths in day i , 
+##x[i] = the log of the number of new infections in day i, n[i] = new infections in day i
+##------------------------------------------------------------------------------
 ##
 ##Model assumption:
-##------------------------------------------------------------------------------------------------------------------------------------
-##1. The observed number of deaths in day i has Poisson distribution.
-##2. The 
+##------------------------------------------------------------------------------
+##1. y[i] has Poisson distribution with rate m[i].
+##
+##2. We assume that x[1] has Normal distribution with mean 0 and precision 0.01, 
+##   x[2] has Normal distribution with mean x[1] and precision tau, and x[i] has
+##   Normal distribution with mean 2*x[i-1]-x[i-2] and precision tau. The 
+##   precision tau here has Gamma distribution with shape 4 and rate 0.04.
+##
+##3. Let D be the fatal disease duration. The log of D has Normal distribution 
+##   with mean 3.235 and standard deviation 0.4147. This distribution is based 
+##   on data from the ISARIC study of 24000+ hospitalized patients who died from
+##   COVID-19. We will use log D to build matrix B
+##
+##4. n changes fairly smoothly from day to day.
+##------------------------------------------------------------------------------
+##
+##Algorithm:
+##------------------------------------------------------------------------------
+##1. Add 20 zeros at the start of the data so we can observe the data from 
+##   February 11, 2020.
+##
+##2. Let i and j be the index for row and columns of square matrix B respectively.
+##   Create matrix B by set the entry where j > i be 0 while the other is 
+##   the lognormal density values of i-j which parameterization follows log D.
+##
+##3. Pass the data, number of observations, and the matrix B into our JAGS model 
+##   from R so the 'model.jags' can generate posterior sample for m and n from 
+##   10000 sampling iterations into R. Note that computation for m and n is done
+##   in JAGS. Further detail about how the sampling and computation works can be
+##   seen in the 'model.jags' file.
+##
+##4. Perform diagnostic analysis for m and n.
+##
+##5. Create a single summary plot containing the plot of actual daily death,
+##   posterior mean of expected daily death, posterior mean of daily new 
+##   infections, and the 95% credible interval for daily new infections in day 
+##   of the year.
+##------------------------------------------------------------------------------
 
-##Load library to perform Markov Chain
+##Load library to perform posterior sampling using JAGS
 library(rjags)
 library(coda)
 
-##Data on daily hospital deaths with COVID-19 in England for the first 100 days from March 2nd 2020,from NHS England.
+##Data on daily hospital deaths with COVID-19 in England for the first 100 days 
+##from March 2nd 2020,from NHS England.
 
 y <-c(1,2,0,2,2,0,4,4,1,9,14,20,22,27,40,46,66,63,105,103,149,159,204,263,326,353,360,437,498,576,645,647,
       700,778,743,727,813,900,792,740,779,718,699,646,686,639,610,571,524,566,486,502,451,438,386,380,345,341,
@@ -24,7 +80,7 @@ y <-c(1,2,0,2,2,0,4,4,1,9,14,20,22,27,40,46,66,63,105,103,149,159,204,263,326,35
       133,139,122,124,117,92,83,94,109,111,83,86,83,80,73,69)
 
 ##Recall that there were no COVID-19 deaths prior to March 2nd 2020. So for modelling purposes it makes sense to extend the data
-## by adding 20 days of zero deaths to the start of the data in order to observe the data from February 11, 2020.
+##by adding 20 days of zero deaths to the start of the data in order to observe the data from February 11, 2020.
 
 y_new <- c(rep(0,20),y) ##Daily deaths data from February 11, 2020
 
@@ -59,9 +115,14 @@ acfplot(sam.coda[[1]][,c('n[2]','n[50]','n[60]','n[100]','m[2]','m[50]','m[60]',
 ##found out that the chain autocorrelation reduces faster near its peaks 
 ##compare to near the beginning and the end. 
 
-##
+##Recall that the effective sample size is compute daily because we have 120 
+##m and n respectively. For the recommended sample size, we take the maximum
+##value of the effective sample size of all m and n without distinct them 
+##because it would be difficult to work with distinct sample size and sometime
+##too small suitable for some nodes in m and n.
 
 ##Recommended sample for iterations
+
 recommended_sample <- max(effectiveSize(sam.coda[[1]]))
 recommended_sample
 
@@ -123,6 +184,7 @@ infection_day <- julian_day[1:(length(y_new)-20)]
 #2. https://statisticsglobe.com/r-polygon-function-plot/
 #3. https://statisticsglobe.com/rev-r-function
 
+
 ##Plot actual daily death
 
 par(mfrow=c(1,1),mar=c(5.1,4.1,4.1,2.1))
@@ -168,4 +230,8 @@ title('Daily Death and New Infections from COVID-19 at England (2020)',cex.main=
 ##From the single summary plot we can see that the posterior mean for the 
 ##expected death fits well with the daily death data from NHS. In addition, 
 ##we can see that the posterior mean for new infections lies inside the 95%
-##credible interval region for new infections.
+##credible interval region for new infections. According to the final plot, we
+##can see that the estimated mean for daily new infections already decline 
+##before lockdown started and almost remained constant after the lockdown 
+##started, but the timing of lockdown appears to coincide when the expected 
+##deaths rises before reaching its peaks.
