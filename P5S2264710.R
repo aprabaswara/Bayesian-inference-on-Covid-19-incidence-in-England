@@ -55,9 +55,19 @@ max(round(recommended_sample,0))
 ##for the simulations. Because the sampling is quite random, we would suggest that the effective
 ##sample size should be around 400 until 800 sample.
 
-##generate credible interval
-credible.int <- apply(sam.coda[[1]][,(length(y_new)+1):(length(y_new)+length(y))],2,quantile,prob=(c(0.025,0.975)))
-max_vertical <- max(colMeans(sam.coda[[1]][,1:length(y_new)]),credible.int[1,],credible.int[2,],colMeans(sam.coda[[1]][,(length(y_new)+1):(length(y_new)+length(y))]))
+##Find sample in MCMC sample list for expected death and new infections
+death_index <- grep("m", colnames(sam.coda[[1]]))
+infection_index <- grep("n", colnames(sam.coda[[1]]))[1:length(y)]
+
+##Generate credible interval for new infections
+credible_interval <- apply(sam.coda[[1]][,infection_index],2,quantile,prob=(c(0.025,0.975)))
+upper_bound <- credible_interval[2,]
+lower_bound <- credible_interval[1,]
+
+##Posterior mean for new infections and expected death
+expect_death <- colMeans(sam.coda[[1]][,death_index])
+new_infect <- colMeans(sam.coda[[1]][,infection_index])
+max_vertical <- max(new_infect,expect_death,upper_bound,lower_bound)
 lockdown_day <- julian(as.Date("2020-3-24"),origin=as.Date("2019-12-31"))
 date_vector <- seq(as.Date("2020-2-11"), by = "days", length.out = 120)
 julian_day <- julian(date_vector,origin=as.Date("2019-12-31"))
@@ -69,12 +79,11 @@ julian_day <- julian(date_vector,origin=as.Date("2019-12-31"))
 #https://statisticsglobe.com/rev-r-function
 par(mfrow=c(1,1))
 plot(julian_day,y_new,xlab='Day of the year',ylab='Number of Individuals',ylim=c(0,max_vertical),col='grey',pch=20)
-polygon(c(rev(julian_day[1:length(y)]), julian_day[1:length(y)]), c(rev(credible.int[1,1:length(y)]),credible.int[2,1:length(y)]), 
-        col = 'gray91', border = NA)
-lines(julian_day[1:length(y)],credible.int[1,1:length(y)],col='red',lty=2)
-lines(julian_day[1:length(y)],credible.int[2,1:length(y)],col='red',lty=2)
-lines(julian_day[1:length(y)],colMeans(sam.coda[[1]][,(length(y_new)+1):(length(y_new)+length(y))]),col='green')
-lines(julian_day,colMeans(sam.coda[[1]][,1:length(y_new)]),col='blue')
+polygon(c(rev(julian_day[1:length(y)]), julian_day[1:length(y)]), c(rev(lower_bound),upper_bound), col = 'gray91', border = NA)
+lines(julian_day[1:length(y)],lower_bound,col='red',lty=2)
+lines(julian_day[1:length(y)],upper_bound,col='red',lty=2)
+lines(julian_day[1:length(y)],new_infect,col='green')
+lines(julian_day,expect_death,col='blue')
 
 abline(v=lockdown_day,lty=2)
 legend(x='topright',legend=c("Mean for New Infections", "Mean for Expected Death", "95% Credible Interval (New Infections)","Actual Daily Death"),
