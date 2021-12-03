@@ -261,7 +261,7 @@ text(x = lockdown_day+4, y = 1100, label = 'lockdown I', pos= 3, cex = 0.6, srt 
 text_legend <- c("Mean for New Infections", "Mean for Expected Death", "95% Credible Interval (New Infections)","Actual Daily Death")
 
 legend(x = 'topright', legend = text_legend, col = c("green", "blue",NA,'grey'), lty = c(1,1,NA,NA), fill = c(NA,NA, 'gray91',NA),
-       border = c(NA,NA,'gray91',NA), pch = c(NA,NA,NA,20),cex = 0.55,bty = 'n', x.intersp = c(2,2,1.5,2.2))
+       border = c(NA,NA,'gray91',NA), pch = c(NA,NA,NA,20), cex = 0.55, bty = 'n', x.intersp = c(2,2,1.5,2.2))
 
 title('Daily Death and New Infections from COVID-19 at England (2020)', cex.main = 0.8) 
 
