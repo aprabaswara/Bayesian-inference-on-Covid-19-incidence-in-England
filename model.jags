@@ -17,9 +17,12 @@
 ##
 ##Assume that y[i] and x[i] has a Poisson and
 ##Normal distribution respectively. To be noted,
-##the Normal distribution for x[i] is
-##parameterized in terms ofprecision instead of
-##variance. 
+##the Normal distribution for x[i] is parameterized
+##in terms ofprecision instead of variance. The
+##input that this JAGS model will receive from the
+##P5S2264710.R file is B, y, and N. For the output,
+##it could be any specific sample which the notation
+##defined in the JAGS model or notation list.
 ##-----------------------------------------------
 
 model{
