@@ -78,12 +78,12 @@ julian_day <- julian(date_vector,origin=as.Date("2019-12-31"))
 #https://statisticsglobe.com/r-polygon-function-plot/
 #https://statisticsglobe.com/rev-r-function
 par(mfrow=c(1,1))
-plot(julian_day,y_new,xlab='Day of the year',ylab='Number of Individuals',ylim=c(0,max_vertical),col='grey',pch=20)
-polygon(c(rev(julian_day[1:length(y)]), julian_day[1:length(y)]), c(rev(lower_bound),upper_bound), col = 'gray91', border = NA)
-lines(julian_day[1:length(y)],lower_bound,col='red',lty=2)
-lines(julian_day[1:length(y)],upper_bound,col='red',lty=2)
-lines(julian_day[1:length(y)],new_infect,col='green')
-lines(julian_day,expect_death,col='blue')
+plot(x=julian_day,y=y_new,xlab='Day of the year',ylab='Number of Individuals',ylim=c(0,max_vertical),col='grey',pch=20)
+polygon(x=c(rev(julian_day[1:length(y)]), y=julian_day[1:length(y)]), c(rev(lower_bound),upper_bound), col = 'gray91', border = NA)
+lines(x=julian_day[1:length(y)],y=lower_bound,col='red',lty=2)
+lines(x=julian_day[1:length(y)],y=upper_bound,col='red',lty=2)
+lines(x=julian_day[1:length(y)],y=new_infect,col='green')
+lines(x=julian_day,y=expect_death,col='blue')
 
 abline(v=lockdown_day,lty=2)
 legend(x='topright',legend=c("Mean for New Infections", "Mean for Expected Death", "95% Credible Interval (New Infections)","Actual Daily Death"),
