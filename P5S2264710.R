@@ -7,18 +7,25 @@
 ##virus called SARS-COV. If we talk about COVID-19 we should talk a little about 
 ##death and infections. Infections is the process of invasion and multiplication 
 ##of microorganism such as bacteria, virus, and parasite that are not normally 
-##present in our body, while death is  the cessation of all vital functions of 
-##the body including the heartbeat, brain activity (including the brain stem), 
-##and breathing. 
+##present in our body, while death is  the permanent cessation of all vital 
+##functions of the body including the heartbeat, brain activity (including the 
+##brain stem), and breathing. 
 ##
 ##This R code is mainly about Bayesian data analysis using the Markov Chain 
 ##Monte Carlo sampling in R with the help of computation in JAGS by using the 
 ##daily death data of COVID-19 at a hospital which observed from March 2nd, 2020. 
-##The data source is from NHS England. The aims of this project is:
+##The data source is from NHS England. Overall, this code is mostly about 
+##The aims of this project is:
 ##1. Observe and interpret the trend of the daily new infections and expected 
 ##   deaths of COVID-19 in England hospital at 2020.
 ##
 ##2. Perform diagnostic analysis on the new infections and expected deaths.
+##
+##Overall, the final output of this project is the single summary plot 
+##containing the plot of actual daily death of the year, posterior mean of 
+##expected daily death, posterior mean of daily new infections, and the 95% 
+##credible interval for daily new infections which observed daily in terms 
+##of day of the year.
 ##------------------------------------------------------------------------------
 ##
 ##Notation:
@@ -37,9 +44,10 @@
 ##   precision tau here has Gamma distribution with shape 4 and rate 0.04.
 ##
 ##3. Let D be the fatal disease duration. The log of D has Normal distribution 
-##   with mean 3.235 and standard deviation 0.4147. This distribution is based 
-##   on data from the ISARIC study of 24000+ hospitalized patients who died from
-##   COVID-19. We will use log D to build matrix B
+##   with mean 3.235 and standard deviation 0.4147, where the mean and standard
+##   deviation already in log scale. This distribution is based on data from
+##   the ISARIC study of 24000+ hospitalized patients who died from COVID-19.
+##   We will use this distribution to build matrix B.
 ##
 ##4. n changes fairly smoothly from day to day.
 ##------------------------------------------------------------------------------
@@ -63,24 +71,29 @@
 ##
 ##5. Create a single summary plot containing the plot of actual daily death,
 ##   posterior mean of expected daily death, posterior mean of daily new 
-##   infections, and the 95% credible interval for daily new infections in day 
-##   of the year.
+##   infections, and the 95% credible interval for daily new infections which
+##   observed in day of the year.
 ##------------------------------------------------------------------------------
 
 ##Load library to perform posterior sampling using JAGS
+
 library(rjags)
+
 library(coda)
 
 ##Data on daily hospital deaths with COVID-19 in England for the first 100 days 
 ##from March 2nd 2020,from NHS England.
 
-y <-c(1,2,0,2,2,0,4,4,1,9,14,20,22,27,40,46,66,63,105,103,149,159,204,263,326,353,360,437,498,576,645,647,
-      700,778,743,727,813,900,792,740,779,718,699,646,686,639,610,571,524,566,486,502,451,438,386,380,345,341,
-      325,313,306,268,251,259,252,266,256,215,203,196,166,183,162,180,172,167,138,160,144,153,150,122,128,116,
-      133,139,122,124,117,92,83,94,109,111,83,86,83,80,73,69)
+y <-c(1,2,0,2,2,0,4,4,1,9,14,20,22,27,40,46,66,63,105,103,149,159,204,263,326,
+      353,360,437,498,576,645,647,700,778,743,727,813,900,792,740,779,718,699,
+      646,686,639,610,571,524,566,486,502,451,438,386,380,345,341,325,313,306,
+      268,251,259,252,266,256,215,203,196,166,183,162,180,172,167,138,160,144,
+      153,150,122,128,116,133,139,122,124,117,92,83,94,109,111,83,86,83,80,73,69)
 
-##Recall that there were no COVID-19 deaths prior to March 2nd 2020. So for modelling purposes it makes sense to extend the data
-##by adding 20 days of zero deaths to the start of the data in order to observe the data from February 11, 2020.
+##Recall that there were no COVID-19 deaths prior to March 2nd 2020. So for 
+##modelling purposes it makes sense to extend the data by adding 20 days of zero
+##deaths to the start of the data in order to observe the data from February 11, 
+##2020.
 
 y_new <- c(rep(0,20),y) ##Daily deaths data from February 11, 2020
 
@@ -88,38 +101,54 @@ y_new <- c(rep(0,20),y) ##Daily deaths data from February 11, 2020
 B <- matrix(0,nrow=length(y_new),ncol=length(y_new))
 
 for (i in 1:nrow(B)){
+  
   for (j in 1:ncol(B)){
+    
     if (j > i){
+      
       B[i,j] <- 0
+      
     }
+    
     else{
+      
       B[i,j] <- dlnorm(i-j, meanlog = 3.235, sdlog = 0.4147)
+      
     }
+    
   }
+  
 }
 
 
 ##Generate posterior random sample from 10000 iterations using JAGS
 
 mod <- jags.model("model.jags",data=list(y=y_new,N=length(y_new),B=B))
+
 sam.coda <- coda.samples(mod,c("m","n"),n.iter=10000)
+
 
 ##Diagnostic plots (trace plot and autocorrelation plots)
 
 par(mfrow = c(4,2), mar = c(2,2,2,2))
+
 traceplot(sam.coda[[1]][,c('n[2]','n[50]','n[60]','n[100]','m[2]','m[50]','m[60]','m[120]')])
+
 acfplot(sam.coda[[1]][,c('n[2]','n[50]','n[60]','n[100]','m[2]','m[50]','m[60]','m[120]')], aspect = 1,type='l')
+
 
 ##From the trace plot we can see that the chain for m and n have a good mixing 
 ##near its peaks compare near the beginning and the end. In addition, we also 
 ##found out that the chain autocorrelation reduces faster near its peaks 
 ##compare to near the beginning and the end. 
 
+
 ##Recall that the effective sample size is compute daily because we have 120 
 ##m and n respectively. For the recommended sample size, we take the maximum
 ##value of the effective sample size of all m and n without distinct them 
 ##because it would be difficult to work with distinct sample size and sometime
 ##too small suitable for some nodes in m and n.
+
 
 ##Recommended sample for iterations
 
@@ -132,16 +161,19 @@ recommended_sample
 ##simulations. Because the sampling is quite random, we would suggest that 
 ##the effective sample size should be around 400 until 800 sample. 
 
+
 ##Regarding the recommended number of sampling iteration to run,we 
 ##found out that when we run for 30000 iterations we get the effective sample 
 ##size is not too small and the autocorrelation reduces faster compare to using
 ##10000 iterations. Thus, we would recommend to run 30000 sampling iterations.
+
 
 ##Find sample for expected death and new infections from the sample list
 
 death_index <- grep("m", colnames(sam.coda[[1]]))
 
 infection_index <- grep("n", colnames(sam.coda[[1]]))[1:length(y)]
+
 
 ##Get credible interval for new infections along with its bounds
 
@@ -151,11 +183,13 @@ upper_bound <- credible_interval[2,]
 
 lower_bound <- credible_interval[1,]
 
+
 ##Posterior mean for new infections and expected death
 
 expect_death <- colMeans(sam.coda[[1]][,death_index])
 
 new_infect <- colMeans(sam.coda[[1]][,infection_index])
+
 
 ##In order to avoid more than one label in x axis when plotting using a time 
 ##period and to give the axis a meaningful interpretation, we will use day of
@@ -163,17 +197,22 @@ new_infect <- colMeans(sam.coda[[1]][,infection_index])
 ##Let day 1 be January 1, 2020. Because Julian function in R count its origin 
 ##day as day 0, then we set the origin date as December 31, 2019. 
 
+
 ##Find the Julian day for the first UK lockdown (March 24, 2020)
 
 lockdown_day <- julian(as.Date("2020-3-24"),origin=as.Date("2019-12-31")) 
 
-##Generate Julian day for daily death and new infections
+
+##Generate Julian day for observing daily death and new infections
 
 date_vector <- seq(as.Date("2020-2-11"), by = "days", length.out = length(y_new))
 
-julian_day <- julian(date_vector,origin=as.Date("2019-12-31"))
 
-infection_day <- julian_day[1:(length(y_new)-20)]
+julian_day <- julian(date_vector,origin=as.Date("2019-12-31")) 
+
+
+infection_day <- julian_day[1:(length(y_new)-20)] ##New infections observation days
+
 
 ##In order to get better visualization of credible interval plot, it would be
 ##better if we could visualize the interval region. We could use Polygon and
