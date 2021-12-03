@@ -6,6 +6,11 @@
 ##1. Observe and interpret the trend of the daily new infections and expected deaths of COVID-19 in England hospital at 2020.
 ##2. Perform diagnostic analysis on the new infections and expected deaths
 ##------------------------------------------------------------------------------------------------------------------------------------
+##
+##Model assumption:
+##------------------------------------------------------------------------------------------------------------------------------------
+##1. The observed number of deaths in day i has Poisson distribution.
+##2. The 
 library(rjags)
 library(coda)
 
@@ -34,28 +39,27 @@ for (i in 1:nrow(B)){
   }
 }
 
-##Question: Do we include m and n in MCMC monitoring diagnostic like tau?
 
-##input to jags
-setwd('C:/Users/Aditya Prabaswara/Bayesian-inference-on-Covid-19-incidence-in-England')
+##Generate Markov Chain Monte Carlo posterior sample using JAGS
 mod <- jags.model("model.jags",data=list(y=y_new,N=length(y_new),B=B))
 sam.coda <- coda.samples(mod,c("m","n"),n.iter=10000)
 
-##diagnostic plots
-par(mfrow=c(2,3))
-traceplot(sam.coda[[1]][,c('n[2]','n[50]','n[100]','m[2]','m[50]','m[120]')])
-acfplot(sam.coda[[1]][,c('n[2]','n[50]','n[100]','m[2]','m[50]','m[120]')],aspect=1,type='l')
+##Diagnostic plots
+par(mfrow=c(4,2),mar=c(2,2,2,2))
+traceplot(sam.coda[[1]][,c('n[2]','n[50]','n[60]','n[100]','m[2]','m[50]','m[60]','m[120]')])
+acfplot(sam.coda[[1]][,c('n[2]','n[50]','n[60]','n[100]','m[2]','m[50]','m[60]','m[120]')],aspect=1,type='l')
 
-##effective sample size
-recommended_sample <- effectiveSize(sam.coda[[1]])
-max(round(recommended_sample,0))
+##From the trace plot we can see that the chain for m and n have a good mixing near its peaks compare in 
 
-##After we run the code, we find a burn-in period from the first iterations until around the
-##4000 iterations. So, we recommend to do a burn-in for 4000 sample in the first iteration
-##for the simulations. Because the sampling is quite random, we would suggest that the effective
-##sample size should be around 400 until 800 sample.
+##Recommended sample for iterations
+recommended_sample <- max(effectiveSize(sam.coda[[1]]))
+recommended_sample
 
-##Find sample in MCMC sample list for expected death and new infections
+##After we run the code, we find a burn-in period from the first iterations until around the 4000 iterations. 
+##So, we recommend to do a burn-in for 4000 sample in the first iteration for the simulations. Because the sampling 
+##is quite random, we would suggest that the effective sample size should be around 400 until 800 sample.
+
+##Find sample for expected death and new infections
 death_index <- grep("m", colnames(sam.coda[[1]]))
 infection_index <- grep("n", colnames(sam.coda[[1]]))[1:length(y)]
 
@@ -67,27 +71,46 @@ lower_bound <- credible_interval[1,]
 ##Posterior mean for new infections and expected death
 expect_death <- colMeans(sam.coda[[1]][,death_index])
 new_infect <- colMeans(sam.coda[[1]][,infection_index])
-max_vertical <- max(new_infect,expect_death,upper_bound,lower_bound)
+max_vertical <- max(max(new_infect),max(expect_death),max(upper_bound),max(lower_bound),max(y_new))
 lockdown_day <- julian(as.Date("2020-3-24"),origin=as.Date("2019-12-31"))
 date_vector <- seq(as.Date("2020-2-11"), by = "days", length.out = 120)
 julian_day <- julian(date_vector,origin=as.Date("2019-12-31"))
+infection_day <- julian_day[1:(length(y_new)-20)]
 
-##plot the data
-#Reference: 
+##In the single summary plot we will plot the 95% credible interval for
+##Reference: 
 #https://stackoverflow.com/questions/14069629/how-can-i-plot-data-with-confidence-intervals
 #https://statisticsglobe.com/r-polygon-function-plot/
 #https://statisticsglobe.com/rev-r-function
-par(mfrow=c(1,1))
+
+##Plot the single summary plot
+par(mfrow=c(1,1),mar=c(5.1,4.1,4.1,2.1))
+
 plot(x=julian_day,y=y_new,xlab='Day of the year',ylab='Number of Individuals',ylim=c(0,max_vertical),col='grey',pch=20)
-polygon(x=c(rev(julian_day[1:length(y)]), y=julian_day[1:length(y)]), c(rev(lower_bound),upper_bound), col = 'gray91', border = NA)
-lines(x=julian_day[1:length(y)],y=lower_bound,col='red',lty=2)
-lines(x=julian_day[1:length(y)],y=upper_bound,col='red',lty=2)
-lines(x=julian_day[1:length(y)],y=new_infect,col='green')
+
+polygon(x=c(rev(infection_day), infection_day), y=c(rev(lower_bound),upper_bound), col = 'gray91', border = NA) ##Draw credible interval region
+
+lines(x=infection_day,y=lower_bound,col='red',lty=2)
+
+lines(x=infection_day,y=upper_bound,col='red',lty=2)
+
+lines(x=infection_day,y=new_infect,col='green')
+
 lines(x=julian_day,y=expect_death,col='blue')
 
-abline(v=lockdown_day,lty=2)
+##Highlight the the first day of UK lockdown (24th March 2020)
+
+abline(v=lockdown_day,lty=2) ##Draw horizontal line on the lockdown day
+
+text(x=lockdown_day+4,y=1100,label='lockdown I',pos=3,cex=0.6,srt=90) ##Label the lockdown day with text
+
+##Add legend and title to the single summary plot
+
 legend(x='topright',legend=c("Mean for New Infections", "Mean for Expected Death", "95% Credible Interval (New Infections)","Actual Daily Death"),
        col=c("green", "blue",NA,'grey'), lty=c(1,1,NA,NA),fill = c(NA,NA, 'gray91',NA),border = c(NA,NA,'gray91',NA), pch=c(NA,NA,NA,20),
-       cex=0.55,bty='n',inset=0.05,x.intersp=c(2,2,1.5,2.2))
-text(x=lockdown_day+4,y=1100,label='lockdown I',pos=3,cex=0.7,srt=90)
-title('Daily Death and New Infections from COVID-19 at England (2020)',cex.main=0.8)
+       cex=0.55,bty='n',x.intersp=c(2,2,1.5,2.2))
+
+title('Daily Death and New Infections from COVID-19 at England (2020)',cex.main=0.8) ##Add plot title
+
+##From the single summary plot we can see that the posterior mean for the expected death fits well with the daily
+##death data from NHS. 
