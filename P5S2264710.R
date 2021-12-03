@@ -50,18 +50,25 @@ par(mfrow=c(4,2),mar=c(2,2,2,2))
 traceplot(sam.coda[[1]][,c('n[2]','n[50]','n[60]','n[100]','m[2]','m[50]','m[60]','m[120]')])
 acfplot(sam.coda[[1]][,c('n[2]','n[50]','n[60]','n[100]','m[2]','m[50]','m[60]','m[120]')],aspect=1,type='l')
 
-##From the trace plot we can see that the chain for m and n have a good mixing near its peaks compare near the
-##beginning and the end. In addition, we also found out that the chain autocorrelation reduces faster near
-##its peaks compare to near the beginning and the end. 
+##From the trace plot we can see that the chain for m and n have a good mixing 
+##near its peaks compare near the beginning and the end. In addition, we also 
+##found out that the chain autocorrelation reduces faster near its peaks 
+##compare to near the beginning and the end. 
 
 ##Recommended sample for iterations
 recommended_sample <- max(effectiveSize(sam.coda[[1]]))
 recommended_sample
 
-##After we run the code with different choice of m and n, we find a burn-in period from the first iterations until around the 4000 iterations. So, we recommend 
-##to do a burn-in for 4000 sample in the first iteration for the simulations. Because the sampling is quite random, we would suggest that the effective sample size 
-##should be around 400 until 800 sample. Furthermore, regarding the recommended number of sampling iteration to run,we found out that when we run for 30000 iterations 
-##we get the effective sample size is not too small and the autocorrelation reduces faster compare to using 10000 iterations.
+##After we run the code with different choice of m and n, we find a burn-in 
+##period from the first iterations until around the 4000 iterations. So, we 
+##recommend to do a burn-in for 4000 sample in the first iteration for the 
+##simulations. Because the sampling is quite random, we would suggest that 
+##the effective sample size should be around 400 until 800 sample. 
+
+##Furthermore,regarding the recommended number of sampling iteration to run,we 
+##found out that when we run for 30000 iterations we get the effective sample 
+##size is not too small and the autocorrelation reduces faster compare to using
+##10000 iterations. Thus, we would recommend to run 30000 sampling iterations.
 
 ##Find sample for expected death and new infections from the sample list
 
@@ -69,11 +76,11 @@ death_index <- grep("m", colnames(sam.coda[[1]]))
 
 infection_index <- grep("n", colnames(sam.coda[[1]]))[1:length(y)]
 
-##Get credible interval for new infections
+##Get credible interval for new infections along with its bounds
 
 credible_interval <- apply(sam.coda[[1]][,infection_index],2,quantile,prob=(c(0.025,0.975)))
 
-upper_bound <- credible_interval[2,]
+upper_bound <- credible_interval[2,] 
 
 lower_bound <- credible_interval[1,]
 
@@ -88,11 +95,14 @@ date_vector <- seq(as.Date("2020-2-11"), by = "days", length.out = 120)
 julian_day <- julian(date_vector,origin=as.Date("2019-12-31"))
 infection_day <- julian_day[1:(length(y_new)-20)]
 
-##In the single summary plot we will plot the 95% credible interval for new infections, the
-##Reference: 
-#https://stackoverflow.com/questions/14069629/how-can-i-plot-data-with-confidence-intervals
-#https://statisticsglobe.com/r-polygon-function-plot/
-#https://statisticsglobe.com/rev-r-function
+##In order to get better visualization of credible interval plot, it would be
+##better if we could visualize the interval region. We could use 
+##Polygon and rev function in R to create a closed region of the interval with
+##shading color to the interval region, which reference of how to use it can be
+##seen in this following links: 
+#1. https://stackoverflow.com/questions/14069629/how-can-i-plot-data-with-confidence-intervals
+#2. https://statisticsglobe.com/r-polygon-function-plot/
+#3. https://statisticsglobe.com/rev-r-function
 
 ##Plot single summary plot
 par(mfrow=c(1,1),mar=c(5.1,4.1,4.1,2.1))
@@ -101,9 +111,9 @@ plot(x=julian_day,y=y_new,xlab='Day of the year',ylab='Number of Individuals',yl
 
 polygon(x=c(rev(infection_day), infection_day), y=c(rev(lower_bound),upper_bound), col = 'gray91', border = NA) ##Draw credible interval region
 
-lines(x=infection_day,y=lower_bound,col='grey',lty=2)
+lines(x=infection_day,y=lower_bound,col='grey',lty=2) ##Plot credible interval lower bound 
 
-lines(x=infection_day,y=upper_bound,col='grey',lty=2)
+lines(x=infection_day,y=upper_bound,col='grey',lty=2) ##Plot credible interval upper bound
 
 lines(x=infection_day,y=new_infect,col='green') ##Plot posterior mean for new infections
 
@@ -118,12 +128,15 @@ text(x=lockdown_day+4,y=1100,label='lockdown I',pos=3,cex=0.6,srt=90)
 
 ##Add legend and title to the single summary plot
 
-legend(x='topright',legend=c("Mean for New Infections", "Mean for Expected Death", "95% Credible Interval (New Infections)","Actual Daily Death"),
-       col=c("green", "blue",NA,'grey'), lty=c(1,1,NA,NA),fill = c(NA,NA, 'gray91',NA),border = c(NA,NA,'gray91',NA), pch=c(NA,NA,NA,20),
-       cex=0.55,bty='n',x.intersp=c(2,2,1.5,2.2))
+text_legend <- c("Mean for New Infections", "Mean for Expected Death", "95% Credible Interval (New Infections)","Actual Daily Death")
+
+legend(x='topright',legend=text_legend,col=c("green", "blue",NA,'grey'), lty=c(1,1,NA,NA),fill = c(NA,NA, 'gray91',NA),border = c(NA,NA,'gray91',NA), 
+       pch=c(NA,NA,NA,20),cex=0.55,bty='n',x.intersp=c(2,2,1.5,2.2))
 
 title('Daily Death and New Infections from COVID-19 at England (2020)',cex.main=0.8) ##Add plot title
 
 ##Conclusion:
-##From the single summary plot we can see that the posterior mean for the expected death fits well with the daily
-##death data from NHS. 
+##From the single summary plot we can see that the posterior mean for the 
+##expected death fits well with the daily death data from NHS. In addition, 
+##we can see that the posterior mean for new infections did not exceed the 
+##credible interval for new infections. 
